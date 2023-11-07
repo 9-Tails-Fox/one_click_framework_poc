@@ -34,19 +34,20 @@ def run_metadata_framework(job_trigger_time: None, task_notebook_path: None, job
     import datetime
     try:
         for row in spark.read.format("json").load("dbfs:/FileStore/metadata").collect():
+
             starttime = datetime.datetime.now()
-            readData(row.source_path, row.raw_target_schema, row.raw_target_table,row.raw_destination_path)
+
+            readData(row.source_path, row.raw_target_schema, row.raw_target_table,row.raw_destination_path,row.initial_load)
             print(f"{ row.raw_target_table} raw completed")
-            writeDatatoSilver(row.silver_target_schema, row.silver_target_table, row.silver_destination_path, row.raw_target_schema, row.raw_target_table)
+
+            writeDatatoSilver(row.silver_target_schema, row.silver_target_table, row.silver_destination_path, row.raw_target_schema, row.raw_target_table,row.primary_keys,row.initial_load)
             print(f"{row.silver_target_table} silver completed")
+
             endtime = datetime.datetime.now()
 
             log_table_changes(row.source_path ,row.raw_target_table, row.raw_destination_path,row.silver_target_table, row.silver_destination_path,starttime, endtime, job_trigger_time, task_notebook_path, job_run_id, job_name, job_id, job_start_time, workspace_url, task_run_id, workspace_id)
+
     except Exception as e:
         print(f'Error : {e}')
 
 run_metadata_framework(job_trigger_time, task_notebook_path, job_run_id, job_name, job_id, job_start_time, workspace_url, task_run_id, workspace_id)
-
-# COMMAND ----------
-
-
