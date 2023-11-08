@@ -15,9 +15,10 @@ dbutils.widgets.text("Silver_target_schema","none","Silver target schema")
 dbutils.widgets.text("Silver_target_table","none","Silver target table")
 # dbutils.widgets.text("Silver_destination_adls_path","none","Silver destination adls path")
 dbutils.widgets.text("SCD_type","none","SCD type")
-# dbutils.widgets.remove("Primary_key")
+dbutils.widgets.text("Primary_key","none","PrimaryKey: ['col1', 'col2', 'col3']")
 dbutils.widgets.dropdown("initial_load", "none", ["FullLoad","DeltaLoad","none"])
 dbutils.widgets.text("run_flag","none","run_flag")
+dbutils.widgets.text("silver_schema","none","SilverSchema: ['col1', cast('col3' as int)]")
 
 # COMMAND ----------
 
@@ -32,9 +33,10 @@ silver_target_schema=dbutils.widgets.get("Silver_target_schema")
 silver_target_table=dbutils.widgets.get("Silver_target_table")
 # silver_destination_adls_path=dbutils.widgets.get("Silver_destination_adls_path")
 scd_type=dbutils.widgets.get("SCD_type")
-# primary_key=dbutils.widgets.get("Primary_key")
+primary_keys=dbutils.widgets.get("Primary_key")
 initial_load=dbutils.widgets.get("initial_load")
 run_flag=dbutils.widgets.get("run_flag")
+silver_schema = dbutils.widgets.get("silver_schema")
 
 # COMMAND ----------
 
@@ -42,12 +44,12 @@ checkpoint_path = "none"
 scd_order_by = ""
 raw_destination_adls_path = f"dbfs:/mnt/metadata_framework/raw/{raw_target_table}/"
 silver_destination_adls_path = f"dbfs:/mnt/metadata_framework/silver/{raw_target_table}/"
-primary_keys = ['','customer_id'] ## 'invoice_no'
+# primary_keys = ['','customer_id'] ## 'invoice_no'
 
 # COMMAND ----------
 
 # DBTITLE 1,Declare metadata function 
-def metadata(source_name: None, source_extension: None, source_adls_path: None, checkpoint_path: None, raw_destination_path: None, raw_target_schema: None, raw_target_table: None, silver_target_schema: None,silver_target_table: None, silver_destination_path: None, scd_type: None, scd_order_by: None, primary_keys: None, initial_load: None, run_flag):
+def metadata(source_name= None, source_extension= None, source_adls_path= None, checkpoint_path= None, raw_destination_path= None, raw_target_schema= None, raw_target_table= None, silver_target_schema= None,silver_target_table= None, silver_destination_path= None, scd_type= None, scd_order_by= None, primary_keys= None, initial_load= None, run_flag= None, silver_schema= None):
     metadata_df  = spark.createDataFrame([
         {
             "source_name": f"{source_name}",
@@ -62,9 +64,10 @@ def metadata(source_name: None, source_extension: None, source_adls_path: None, 
             "silver_destination_path": f"{silver_destination_path}",
             "scd_type": f"{scd_type}",
             "scd_order_by": f"{scd_order_by}",
-            "primary_keys":primary_keys,
+            "primary_keys":eval(primary_keys),
             "initial_load":f"{initial_load}",
-            "run_flag":f"{run_flag}"
+            "run_flag":f"{run_flag}",
+            "silver_schema": eval(silver_schema)
         }
     ])
     metadata_df.write.mode("append").format("json").save("dbfs:/FileStore/metadata")
@@ -89,6 +92,7 @@ metadata(
     primary_keys,
     initial_load,
     run_flag,
+    silver_schema
 )
 
 # COMMAND ----------
@@ -102,4 +106,17 @@ df.display()
 
 # COMMAND ----------
 
+df = spark.read.format('csv').option('header','true').load('dbfs:/mnt/metadata_framework/ADLS/Fact_tables/sales_data/sales_data.csv')
+#invoice_no
 
+# COMMAND ----------
+
+df.display()
+
+# COMMAND ----------
+
+df.columns
+
+# COMMAND ----------
+
+['cast(invoice_no as int)', 'customer_id', 'category', 'cast(quantity as double)', 'cast(price as decimal(15,2))', 'cast(invoice_date as date)', 'shopping_mall', 'cast(Effective_TimeStamp as timestamp )']
