@@ -74,7 +74,7 @@ def return_insert_sel_val_str(lis,lg):
     str_ = str_[0:-1]
     return str_
 
-def writeDatatoSilver(silver_target_schema, silver_target_table, silver_destination_path, raw_target_schema, raw_target_table, pk_col, load_type):
+def writeDatatoSilver(silver_target_schema, silver_target_table, silver_destination_path, raw_target_schema, raw_target_table, pk_col, load_type, silver_schema):
 
 
     import pyspark.sql.functions as F
@@ -90,7 +90,7 @@ def writeDatatoSilver(silver_target_schema, silver_target_table, silver_destinat
 
     windowSpec = Window.partitionBy(pk_col).orderBy(F.desc("Effective_TimeStamp"), F.desc('_commit_version'))
     df = df.withColumn("rank", F.dense_rank().over(windowSpec)).filter("rank = 1")
-    df.createOrReplaceTempView(f"{raw_target_schema}_source_view")
+    df.selectExpr(silver_schema).createOrReplaceTempView(f"{raw_target_schema}_source_view")
 
     if silver_target_schema not in [db.name for db in spark.catalog.listDatabases()]:
         spark.sql(f"""
@@ -107,7 +107,7 @@ def writeDatatoSilver(silver_target_schema, silver_target_table, silver_destinat
                 """)
         ### implement data quality
         writedf = df.select([col for col in raw_columns])
-        writedf.write.mode("overwrite").option("path",f"{silver_destination_path}").option('overwriteSchema','True').saveAsTable(f"{silver_target_schema}.{silver_target_table}")
+        writedf.selectExpr(silver_schema).write.mode("overwrite").option("path",f"{silver_destination_path}").option('overwriteSchema','True').saveAsTable(f"{silver_target_schema}.{silver_target_table}")
 
     else:
         pk_condition = return_update_and_pf_str(pk_col, "pk")

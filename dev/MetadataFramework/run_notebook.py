@@ -40,7 +40,7 @@ def run_metadata_framework(job_trigger_time: None, task_notebook_path: None, job
             readData(row.source_path, row.raw_target_schema, row.raw_target_table,row.raw_destination_path,row.initial_load)
             print(f"{ row.raw_target_table} raw completed")
 
-            writeDatatoSilver(row.silver_target_schema, row.silver_target_table, row.silver_destination_path, row.raw_target_schema, row.raw_target_table,row.primary_keys,row.initial_load)
+            writeDatatoSilver(row.silver_target_schema, row.silver_target_table, row.silver_destination_path, row.raw_target_schema, row.raw_target_table,row.primary_keys,row.initial_load, row.silver_schema)
             print(f"{row.silver_target_table} silver completed")
 
             endtime = datetime.datetime.now()
